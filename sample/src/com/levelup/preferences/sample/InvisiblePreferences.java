@@ -45,7 +45,7 @@ public enum InvisiblePreferences implements PreferenceKey {
 	/**
 	 * name of the stored {@link SharedPreferences} file
 	 */
-	private static final String PREFS_NAME = "HiddenPrefs";
+	static final String PREFS_NAME = "HiddenPrefs";
 	
 	/**
 	 * helper method to get access to the cached values, creates the object if it doesn't exist
@@ -109,6 +109,7 @@ public enum InvisiblePreferences implements PreferenceKey {
 
 	@Override
 	public String getStorageName() {
+		// using the enum name() method, so the enum names must correspond to the keys in R.xml.invisible_prefs
 		return name();
 	}
 }
