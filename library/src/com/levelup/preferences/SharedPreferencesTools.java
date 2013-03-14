@@ -23,15 +23,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.levelup.touiteur.log.TouiteurLog;
-
-import st.gaw.db.MapEntry;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.util.Log;
 
 /**
  * A convenient tools to manipulate {@link SharedPreferences} with a fast copy in memory
@@ -41,6 +39,8 @@ import android.os.Message;
  */
 public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceKey> implements android.content.SharedPreferences.OnSharedPreferenceChangeListener {
 
+	private static final String LOG_TAG = "PrefTool";
+	
 	/**
 	 * Interface defining the format of a key use to save/restore data from the {@link SharedPreferencesTools}
 	 * <p>The type of the value is deduced from the type of the {@link #defaultValue()}, if it's null it's assumed to be a {@link String}
@@ -176,7 +176,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 				values.put(key, entry.getValue());
 			}
 		}
-
+		
 		HandlerThread handlerThread = new HandlerThread("Prefs_"+prefName, android.os.Process.THREAD_PRIORITY_BACKGROUND);
 		handlerThread.start();
 
@@ -187,7 +187,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 				switch (AsyncMessages.values()[msg.what]) {
 				case MSG_STORE_STRING:
 					@SuppressWarnings("unchecked")
-					MapEntry<K, String> stringData = (MapEntry<K, String>) msg.obj;
+					Entry<K, String> stringData = (Entry<K, String>) msg.obj;
 					editor = prefs.edit();
 					editor.putString(stringData.getKey().getStorageName(), stringData.getValue());
 					editor.commit();
@@ -195,7 +195,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 
 				case MSG_STORE_BOOLEAN:
 					@SuppressWarnings("unchecked")
-					MapEntry<K, Boolean> boolData = (MapEntry<K, Boolean>) msg.obj;
+					Entry<K, Boolean> boolData = (Entry<K, Boolean>) msg.obj;
 					editor = prefs.edit();
 					editor.putBoolean(boolData.getKey().getStorageName(), boolData.getValue());
 					editor.commit();
@@ -203,7 +203,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 
 				case MSG_STORE_INT:
 					@SuppressWarnings("unchecked")
-					MapEntry<K, Integer> intData = (MapEntry<K, Integer>) msg.obj;
+					Entry<K, Integer> intData = (Entry<K, Integer>) msg.obj;
 					editor = prefs.edit();
 					editor.putInt(intData.getKey().getStorageName(), intData.getValue());
 					editor.commit();
@@ -211,7 +211,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 
 				case MSG_STORE_LONG:
 					@SuppressWarnings("unchecked")
-					MapEntry<K, Long> longData = (MapEntry<K, Long>) msg.obj;
+					Entry<K, Long> longData = (Entry<K, Long>) msg.obj;
 					editor = prefs.edit();
 					editor.putLong(longData.getKey().getStorageName(), longData.getValue());
 					editor.commit();
@@ -219,7 +219,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 
 				case MSG_STORE_FLOAT:
 					@SuppressWarnings("unchecked")
-					MapEntry<K, Float> floatData = (MapEntry<K, Float>) msg.obj;
+					Entry<K, Float> floatData = (Entry<K, Float>) msg.obj;
 					editor = prefs.edit();
 					editor.putFloat(floatData.getKey().getStorageName(), floatData.getValue());
 					editor.commit();
@@ -373,7 +373,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 		String oldValue = (String) values.put(key, value);
 
 		if (oldValue==null || !oldValue.equals(value)) {
-			MapEntry<K, ?> data = new MapEntry<K, String>(key, value);
+			Entry<K, ?> data = new SavedEntry<K, String>(key, value);
 			saveStoreHandler.sendMessage(Message.obtain(saveStoreHandler, AsyncMessages.MSG_STORE_STRING.ordinal(), data));
 			onPreferenceChanged(key);
 		}
@@ -393,7 +393,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 		Boolean oldValue = (Boolean) values.put(key, value);
 
 		if (oldValue==null || !oldValue.equals(value)) {
-			MapEntry<K, ?> data = new MapEntry<K, Boolean>(key, value);
+			Entry<K, ?> data = new SavedEntry<K, Boolean>(key, value);
 			saveStoreHandler.sendMessage(Message.obtain(saveStoreHandler, AsyncMessages.MSG_STORE_BOOLEAN.ordinal(), data));
 			onPreferenceChanged(key);
 		}
@@ -413,7 +413,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 		Integer oldValue = (Integer) values.put(key, value);
 
 		if (oldValue==null || !oldValue.equals(value)) {
-			MapEntry<K, ?> data = new MapEntry<K, Integer>(key, value);
+			Entry<K, ?> data = new SavedEntry<K, Integer>(key, value);
 			saveStoreHandler.sendMessage(Message.obtain(saveStoreHandler, AsyncMessages.MSG_STORE_INT.ordinal(), data));
 			onPreferenceChanged(key);
 		}
@@ -433,7 +433,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 		Long oldValue = (Long) values.put(key, value);
 
 		if (oldValue==null || !oldValue.equals(value)) {
-			MapEntry<K, ?> data = new MapEntry<K, Long>(key, value);
+			Entry<K, ?> data = new SavedEntry<K, Long>(key, value);
 			saveStoreHandler.sendMessage(Message.obtain(saveStoreHandler, AsyncMessages.MSG_STORE_LONG.ordinal(), data));
 			onPreferenceChanged(key);
 		}
@@ -453,7 +453,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 		Float oldValue = (Float) values.put(key, value);
 
 		if (oldValue==null || Float.compare(oldValue, value)!=0) {
-			MapEntry<K, ?> data = new MapEntry<K, Float>(key, value);
+			Entry<K, ?> data = new SavedEntry<K, Float>(key, value);
 			saveStoreHandler.sendMessage(Message.obtain(saveStoreHandler, AsyncMessages.MSG_STORE_FLOAT.ordinal(), data));
 			onPreferenceChanged(key);
 		}
@@ -485,7 +485,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 			if (value==null)
 				saveStoreHandler.sendMessage(Message.obtain(saveStoreHandler, AsyncMessages.MSG_REMOVE_KEY.ordinal(), key));
 			else {
-				MapEntry<K, ?> data = new MapEntry<K, Integer>(key, storage.storageValue(value));
+				Entry<K, ?> data = new SavedEntry<K, Integer>(key, storage.storageValue(value));
 				saveStoreHandler.sendMessage(Message.obtain(saveStoreHandler, AsyncMessages.MSG_STORE_INT.ordinal(), data));
 			}
 			onPreferenceChanged(key);
@@ -518,7 +518,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 			if (value==null)
 				saveStoreHandler.sendMessage(Message.obtain(saveStoreHandler, AsyncMessages.MSG_REMOVE_KEY.ordinal(), key));
 			else {
-				MapEntry<K, ?> data = new MapEntry<K, String>(key, storage.storageValue(value));
+				Entry<K, ?> data = new SavedEntry<K, String>(key, storage.storageValue(value));
 				saveStoreHandler.sendMessage(Message.obtain(saveStoreHandler, AsyncMessages.MSG_STORE_STRING.ordinal(), data));
 			}
 			onPreferenceChanged(key);
@@ -592,7 +592,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 		if (keySource!=null) {
 			K prefKey = keySource.storageToKey(key);
 			if (prefKey==null) {
-				TouiteurLog.e(false, "unknown preference key "+key);
+				Log.e(LOG_TAG, "unknown preference key "+key);
 			} else if (prefKey.defaultValue() instanceof Integer) {
 				int newValue = sharedPreferences.getInt(key, (Integer) prefKey.defaultValue());
 				putInt(prefKey, newValue);
@@ -623,7 +623,7 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 				String newValue = sharedPreferences.getString(key, (String) prefKey.defaultValue());
 				putString(prefKey, newValue);
 			} else {
-				TouiteurLog.e(false, "unknown preference type for "+key+" K:"+prefKey);
+				Log.e(LOG_TAG, "unknown preference type for "+key+" K:"+prefKey);
 			}
 		}
 	}
@@ -634,6 +634,33 @@ public class SharedPreferencesTools<K extends SharedPreferencesTools.PreferenceK
 				changeListeners.remove(wlisteners);
 			else
 				wlisteners.get().onSharedPreferenceChanged(this, key);
+		}
+	}
+	
+	private static class SavedEntry<K,V> implements Map.Entry<K, V> {
+
+		private final K key;
+		private V value;
+		
+		public SavedEntry(K key, V value) {
+			this.key = key;
+			this.value = value;
+		}
+
+		@Override
+		public K getKey() {
+			return key;
+		}
+
+		@Override
+		public V getValue() {
+			return value;
+		}
+
+		@Override
+		public V setValue(V object) {
+			value = object;
+			return value;
 		}
 	}
 }
